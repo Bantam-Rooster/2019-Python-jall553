@@ -69,8 +69,6 @@ class MainApp(object):
         error = authenticate(username, password)
         if error == 0:
             cherrypy.session['signing_key']= makeKey(username, password)
-            userlist = listUsers(username, password)
-            storedata(userlist)
             cherrypy.session['username'] = username
             cherrypy.session['password'] = password
             cherrypy.session['loginserver_record'] = getLoginServerRecord(username,password)
@@ -174,9 +172,14 @@ def authenticate(username=None, password=None):
         response = urllib.request.urlopen(req)
         data = response.read()  # read the received bytes
         encoding = response.info().get_content_charset('utf-8')  # load encoding if possible (default to utf-8)
+        JSON_Object = json.loads(data.decode(encoding))
+        authentication = JSON_Object['authentication']
+
         print(data)
-        response.close()
-        return 0
+        if authentication == "basic":
+            return 0
+        else:
+            return 1
     except urllib.error.HTTPError as error:
         print(error.read())
         return 1
@@ -245,6 +248,8 @@ def makeKey(username, password):
         response.close()
         print(data)
         report(username,password,pubkey_hex_str)
+        userlist = listUsers(username, password)
+        storedata(userlist)
         return signingKey1
     except urllib.error.HTTPError as error:
         print(error.read())
